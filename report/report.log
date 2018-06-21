@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.18 (MiKTeX 2.9.6350 64-bit) (preloaded format=pdflatex 2018.6.1)  21 JUN 2018 17:07
+This is pdfTeX, Version 3.14159265-2.6-1.40.18 (MiKTeX 2.9.6350 64-bit) (preloaded format=pdflatex 2018.6.1)  21 JUN 2018 17:23
 entering extended mode
 **./report.tex
 (report.tex
@@ -878,13 +878,13 @@ LaTeX Font Info:    Try loading font information for TS1+ptm on input line 53.
 ("C:\Program Files\MiKTeX 2.9\tex\latex\psnfss\ts1ptm.fd"
 File: ts1ptm.fd 2001/06/04 font definitions for TS1/ptm.
 )
-<images/profitableAreasDiagram_v2.png, id=3, 680.5425pt x 181.67876pt>
-File: images/profitableAreasDiagram_v2.png Graphic file (type png)
+<images/profitableAreasDiagram.png, id=3, 680.5425pt x 201.75375pt>
+File: images/profitableAreasDiagram.png Graphic file (type png)
 
-<use images/profitableAreasDiagram_v2.png>
-Package pdftex.def Info: images/profitableAreasDiagram_v2.png used on input lin
-e 77.
-(pdftex.def)             Requested size: 258.0pt x 68.87508pt.
+<use images/profitableAreasDiagram.png>
+Package pdftex.def Info: images/profitableAreasDiagram.png used on input line 7
+7.
+(pdftex.def)             Requested size: 258.0pt x 76.48558pt.
 
 Overfull \hbox (6.0pt too wide) in paragraph at lines 77--78
  [][] 
@@ -919,8 +919,7 @@ Overfull \hbox (12.00269pt too wide) in paragraph at lines 116--117
 [1{C:/ProgramData/MiKTeX/2.9/pdftex/config/pdftex.map}
 
 
- <./images/frequentRoutesDiagram.png> <./images/profitableAreasDiagram_v2.png>]
-
+ <./images/frequentRoutesDiagram.png> <./images/profitableAreasDiagram.png>]
 <images/congestedAreas.png, id=15, 377.41pt x 62.2325pt>
 File: images/congestedAreas.png Graphic file (type png)
 
@@ -970,15 +969,15 @@ Overfull \hbox (6.0pt too wide) in paragraph at lines 172--173
 
 No file report.bbl.
 - LAST -
-Extra skip:20.1045pt
+Extra skip:8.1045pt
 Left:462.92462pt/3.60004pt
-Right:446.29521pt/0.12494pt
-Output:457.60991pt
+Right:458.29521pt/0.12494pt
+Output:460.60991pt
 [2 <./images/congestedAreas.png> <./images/pleasantDriver.png>] (report.aux) ) 
 Here is how much of TeX's memory you used:
  7108 strings out of 493323
- 97521 string characters out of 3139058
- 256896 words of memory out of 3000000
+ 97506 string characters out of 3139058
+ 236896 words of memory out of 3000000
  10538 multiletter control sequences out of 15000+200000
  37274 words of font info for 73 fonts, out of 3000000 for 9000
  1141 hyphenation exceptions out of 8191
@@ -989,7 +988,7 @@ X 2.9/fonts/type1/public/amsfonts/cm/cmmi10.pfb><C:/Program Files/MiKTeX 2.9/fo
 nts/type1/public/amsfonts/cm/cmsy10.pfb><C:/Program Files/MiKTeX 2.9/fonts/type
 1/urw/times/utmb8a.pfb><C:/Program Files/MiKTeX 2.9/fonts/type1/urw/times/utmr8
 a.pfb><C:/Program Files/MiKTeX 2.9/fonts/type1/urw/times/utmri8a.pfb>
-Output written on report.pdf (2 pages, 86504 bytes).
+Output written on report.pdf (2 pages, 85839 bytes).
 PDF statistics:
  39 PDF objects out of 1000 (max. 8388607)
  0 named destinations out of 1000 (max. 500000)
