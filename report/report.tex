@@ -93,7 +93,6 @@ insert into ProfitPerAreaStr;
 from e1 = TaxiSecStr ->
    TaxiSecStr[e1.medallion == medallion 
    and pickup_datetime - e1.dropoff_datetime > 30 mins]
-  within 30 min
 select ? 
 insert into EmptyTaxisStr
 
