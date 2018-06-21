@@ -163,7 +163,7 @@ insert into CongestedAreasStr;
 
 \section{\textit{Most Pleasant Taxi Drivers}}
 
-Para premiar os condutores de táxis mais simpáticos é necessário que seja emitido, uma vez por dia, o taxista que recebeu mais gorjetas nesse dia.
+Para recompensar os condutores de táxis mais simpáticos é necessário que seja emitido, uma vez por dia, o taxista que recebeu mais gorjetas nesse dia.
 
 O fluxo da Figura \ref{fig:pleasantDriverDiagram} demonstra a construção desta \textit{query}.
 
@@ -174,7 +174,7 @@ O fluxo da Figura \ref{fig:pleasantDriverDiagram} demonstra a construção desta
     \label{fig:pleasantDriverDiagram}
 \end{figure}
 
-Por último, do segmento de código seguinte apresenta-se o código referente a este \textit{use case}:
+Por último, no segmento de código seguinte apresenta-se a solução referente a este \textit{use case}:
 
 \begin{lstlisting}[language=SQL]
 from TaxiSecStr#window.timeBatch(24 hours)
