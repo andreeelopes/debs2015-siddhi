@@ -33,7 +33,7 @@ Almada, Portugal}
 
 \section{\textit{Frequent Routes}}
 
-O objectivo deste \textit{query} é achar o \textit{top} 10 das rotas mais frequentes durante um período de 30 minutos. Um rota é representada por uma \textit{cell} inicial e uma \textit{cell} final.
+O objectivo desta primeira \textit{query} é achar o \textit{top} 10 das rotas mais frequentes durante um período de 30 minutos. Um rota é representada por uma \textit{cell} inicial e uma \textit{cell} final.
 
 Na Figura \ref{fig:frequentRoutesDiagram} pode se observar a estrutura desta query. Primeiramente efetua-se uma janela deslizante de 30 minutos sobre o input. Finalmente, seleciona-se os 10 resultados com a frequência mais alta.
 
@@ -68,7 +68,7 @@ Nesta query pretende-se identificar, de forma contínua, as áreas que são mais
 
 A receita gerada numa área é a média das \textit{fare} + \textit{tip} de todas as corridas que originaram nessa área e que acabaram nos 15 minutos seguintes.
 
-O número de táxis vazios é a soma dos táxis que efetuaram uma \textit{dropoff} nessa área mas que após 30 minutos ainda não efetuaram uma \textit{pickup}.
+O número de táxis vazios num dada área consiste na soma dos táxis que efetuaram uma \textit{dropoff} nessa área mas que após 30 minutos ainda não efetuaram uma \textit{pickup}.
 
 Na Figura \ref{fig:profitablesAreasDiagram} pode-se observar um diagrama que demonstra o fluxo desta \textit{query}.
 
@@ -83,17 +83,18 @@ O código siddhi que implementa esta \textit{query} é o seguinte:
 
 \begin{lstlisting}[language=SQL]
 from TaxiSecStr#window.time(15 min)
-select avg(FareTrip)
+select pickup_grid_x, pickup_grid_y,
+   dropoff_grid_x, dropoff_grid_y,
+   avg(FareTrip) as profit
 group by pickup_grid_x, pickup_grid_y,
    dropoff_grid_x, dropoff_grid_y
-insert into ProfitStr;
+insert into ProfitPerAreaStr;
 
-Atencao: no paper esta diferente
 from e1 = TaxiSecStr ->
    TaxiSecStr[e1.medallion == medallion 
    and pickup_datetime - e1.dropoff_datetime > 30 mins]
   within 30 min
-select * 
+select ? 
 insert into EmptyTaxisStr
 
  
