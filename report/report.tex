@@ -17,13 +17,9 @@
 \title{Processamento de Streams\\Análise a Corridas de Táxis}
 
 
-\author{\IEEEauthorblockN{André Lopes}
-\IEEEauthorblockA{\textit{Departamento de Informática} \\
-\textit{Faculdade de Ciências e Tecnologia da Universidade Nova de Lisboa }\\
-Almada, Portugal}
-
+\author{\IEEEauthorblockN{André Lopes - 45617 }\\
 \and
-\IEEEauthorblockN{Nelson Coquenim}
+\IEEEauthorblockN{Nelson Coquenim - 45694}\\
 \IEEEauthorblockA{\textit{Departamento de Informática} \\
 \textit{Faculdade de Ciências e Tecnologia da Universidade Nova de Lisboa }\\
 Almada, Portugal}
@@ -37,9 +33,9 @@ Almada, Portugal}
 
 \section{\textit{Frequent Routes}}
 
-O objectivo deste \textit{query} é achar o top 10 das rotas mais frequentes durante um período de 30 minutos. Um rota é representada por uma \textit{cell} inicial e uma \textit{cell} final.
+O objectivo deste \textit{query} é achar o \textit{top} 10 das rotas mais frequentes durante um período de 30 minutos. Um rota é representada por uma \textit{cell} inicial e uma \textit{cell} final.
 
-Na Figura \ref{fig:frequentRoutesDiagram} observa-se a estrutura desta query. Primeiramente efetua-se uma janela deslizante de 30 minutos sobre o input. De seguida, seleciona-se os 10 resultados com a frequência mais alta.
+Na Figura \ref{fig:frequentRoutesDiagram} pode se observar a estrutura desta query. Primeiramente efetua-se uma janela deslizante de 30 minutos sobre o input. Finalmente, seleciona-se os 10 resultados com a frequência mais alta.
 
 \begin{figure}[hbtp]
     \centering
@@ -78,7 +74,7 @@ Na Figura \ref{fig:profitablesAreasDiagram} pode-se observar um diagrama que dem
 
 \begin{figure}[hbtp]
     \centering
-        \includegraphics[width=0.5\textwidth]{images/profitableAreasDiagram}
+        \includegraphics[width=0.5\textwidth]{images/profitableAreasDiagram_v2}
     \caption{Diagrama da query \textit{Profitables Areas}.}
     \label{fig:profitablesAreasDiagram}
 \end{figure}
@@ -92,63 +88,105 @@ group by pickup_grid_x, pickup_grid_y,
    dropoff_grid_x, dropoff_grid_y
 insert into ProfitStr;
 
-verificar esta query no paper esta diferente
+Atencao: no paper esta diferente
 from e1 = TaxiSecStr ->
    TaxiSecStr[e1.medallion == medallion 
    and pickup_datetime - e1.dropoff_datetime > 30 mins]
+  within 30 min
 select * 
-insert into EmptyTaxisStr 
+insert into EmptyTaxisStr
+
+ 
 \end{lstlisting}
 
-\section{Idle Taxis}
+\section{\textit{Idle Taxis}}
+
+Neste \textit{use case} espera-se que seja emitido um alerta quando o número de táxis disponíveis torna-se superior ao pretendido. Para tal, deverá ser publicado um aviso quando o tempo de paragem médio (\textit{idle time}) de todos os táxis é superior a 10 minutos. Define-se como tempo de paragem, o período de tempo entre uma \textit{dropoff} e uma \textit{pickup}. Finalmente, assume-se que um táxi encontra-se disponível se tiver realizado pelo menos uma viagem na última hora.
+
+O diagrama na Figura \textbf{INSERIR FIGURA} demonstra a lógica da implementação desta \textit{query}.
+
+Em seguida, apresenta-se o excerto de código da \textit{query} em questão:
+
 \begin{lstlisting}[language=SQL]
 from TaxiSecStr#window.time(1 hour)
 select *
 insert into AvailableTaxisStr;
 
 from e1 = TaxiSecStr -> 
-   e2 = TaxiSecStr[e2.medallion == e1.medallion]
-select e1.medallion as taxi, 
-(e2.pickup_datetime 
+  e2 = TaxiSecStr[medallion == e1.medallion]
+select e1.medallion as taxi,
+  (e2.pickup_datetime 
    - e1.dropoff_datetime) as idle_time
 insert into IdleTimeTaxisStr;
-
 
 // idle_time is in seconds
 from IdleTimeTaxisStr#window.time(1 hour)
 select taxi, avg(idle_time)
 insert into IdleTaxisStr;
 \end{lstlisting}
-\section{Congested Areas}
+
+
+
+\section{\textit{Congested Areas}}
+
+Nesta secção ir-se-à implementar uma \textit{query} que emita as localizações onde possivelmente poderá haver congestionamentos no trânsito. Para tal, dever-se-á detetar picos nas durações das viagens dos táxis que são seguidos por pelo menos 3 viagens todas estas com durações crescentes.
+
+A Figura \ref{fig:congestedAreasDiagram} expõe o racional na construção desta \textit{query}.
+
+\begin{figure}[hbtp]
+    \centering
+        \includegraphics[width=0.5\textwidth]{images/congestedAreas}
+    \caption{Diagrama da query \textit{Congested Areas}.}
+    \label{fig:congestedAreasDiagram}
+\end{figure}
+
+Finalmente, apresenta-se o código siddhi da \textit{query} \textit{congested areas}:
+
 \begin{lstlisting}[language=SQL]
 from every e1 = TaxiSecStr,
-   e2 = TaxiSecStr[e2.medallion 
-   		== e1.medallion 
-	and e2.ride_duration 
-		> e1.ride_duration],
-   e3 = TaxiSecStr[e3.medallion 
-   		== e2.medallion 
-	and e3.ride_duration 
-		> e2.ride_duration],
-   e4 = TaxiSecStr[e4.medallion 
-   		== e3.medallion
-    and e4.ride_duration 
-    	> e3.ride_duration]
-select e1.medallion as medallion,
- 	e1.pickup_grid_x as grid_x, 
- 	e1.pickup_grid_y as grid_y
+  e2 = TaxiSecStr[medallion == e1.medallion
+  and ride_duration > e1.ride_duration]
+  e3 = TaxiSecStr[medallion == e2.medallion
+  and ride_duration < e2.ride_duration]
+  e4 = TaxiSecStr[medallion == e3.medallion
+  and ride_duration > e3.ride_duration],
+  e5 = TaxiSecStr[medallion == e4.medallion
+  and ride_duration > e4.ride_duration],
+  e6 = TaxiSecStr[medallion == e5.medallion
+  and ride_duration > e5.ride_duration]
+select e2.pickup_grid_x as grid_x,
+  e2.pickup_grid_y as grid_y
 insert into CongestedAreasStr;
 \end{lstlisting}
 
-\section{Most Pleasant Taxi Drivers}
+
+
+\section{\textit{Most Pleasant Taxi Drivers}}
+
+Para premiar os condutores de táxis mais simpáticos é necessário que seja emitido, uma vez por dia, o taxista que recebeu mais gorjetas nesse dia.
+
+O fluxo da Figura \ref{fig:pleasantDriverDiagram} demonstra a construção desta \textit{query}.
+
+\begin{figure}[hbtp]
+    \centering
+        \includegraphics[width=0.5\textwidth]{images/pleasantDriver}
+    \caption{Diagrama da query \textit{Most Pleasant Taxi Driver}.}
+    \label{fig:pleasantDriverDiagram}
+\end{figure}
+
+Por último, do segmento de código seguinte apresenta-se o código referente a este \textit{use case}:
 
 \begin{lstlisting}[language=SQL]
-from TaxiSecStr
-select dropoff_day, hack_license as driver,
-	sum(tip_amount) as tips_total
-group by dropoff_day, hack_license
+from TaxiSecStr#window.timeBatch(24 hours)
+select driver, 
+  sum(tip_amount) as tips_total
+group by driver
 order by tips_total DESC
-insert into DriversTipsPerDay;
+insert into TodayDriversTips;
+
+from TodayDriversTips#window.length(1)
+select *
+insert into PleasantDriverStr;
 \end{lstlisting}
 
 \section{Conclusão} 

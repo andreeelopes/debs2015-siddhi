@@ -19,8 +19,9 @@ define stream IdleTaxisStr (taxi string, idle_time long);
 define stream CongestedAreasStr (medallion string, grid_x double, grid_y double);
 
 
---@sink(type='log', prefix='Top Driver')
-define stream DriversTipsPerDay (dropoff_day int, driver string, tips_total double);
+
+@sink(type='log', prefix= 'Pleasant Driver') 
+define stream PleasantDriverStr (medallion string, tips_total double);
 
 
 --Auxiliary Streams
@@ -32,6 +33,9 @@ define stream TaxiSecStr (medallion string, hack_license string, pickup_grid_x d
 define stream IdleTimeTaxisStr (taxi string, idle_time long);
 
 define stream RouteFrequencyStr (pickup_grid_x double, pickup_grid_y double, dropoff_grid_x double, dropoff_grid_y double, frequency long);
+
+--@sink(type='log', prefix= 'Today Tips per Driver') 
+define stream TodayDriversTips (medallion string, tips_total double);
 
 --QUERIES
 
@@ -105,21 +109,26 @@ where the taxi started the ride which had the peak duration.
 */
 
 from every e1 = TaxiSecStr,
-            e2 = TaxiSecStr[e2.medallion == e1.medallion and e2.ride_duration > e1.ride_duration],
-            e3 = TaxiSecStr[e3.medallion == e2.medallion and e3.ride_duration > e2.ride_duration],
-            e4 = TaxiSecStr[e4.medallion == e3.medallion and e4.ride_duration > e3.ride_duration]
-select e1.medallion as medallion, e1.pickup_grid_x as grid_x, e1.pickup_grid_y as grid_y
+			e2 = TaxiSecStr[medallion == e1.medallion and ride_duration > e1.ride_duration] --pico
+			e3 = TaxiSecStr[medallion == e2.medallion and ride_duration < e2.ride_duration]
+            e4 = TaxiSecStr[medallion == e3.medallion and ride_duration > e3.ride_duration],
+            e5 = TaxiSecStr[medallion == e4.medallion and ride_duration > e4.ride_duration],
+            e6 = TaxiSecStr[medallion == e5.medallion and ride_duration > e5.ride_duration]
+select e2.pickup_grid_x as grid_x, e2.pickup_grid_y as grid_y
 insert into CongestedAreasStr;
 
 /*
 To distinguish the most pleasant taxi drivers, it should be nice to have an event, 
 emitted once a day, signalling the taxi driver with the highest total amount of tips in that day
 */
-
-
-from TaxiSecStr
-select dropoff_day, hack_license as driver, sum(tip_amount) as tips_total
-group by dropoff_day, hack_license
+from TaxiSecStr#window.timeBatch(24 hour)
+select medallion, sum(tip_amount) as tips_total
+group by medallion
 order by tips_total DESC
-insert into DriversTipsPerDay;
+insert into TodayDriversTips;
+
+from TodayDriversTips#window.length(1)
+select *
+insert into PleasantDriverStr;
+
 
