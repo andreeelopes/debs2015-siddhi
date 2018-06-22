@@ -39,7 +39,7 @@ Na Figura \ref{fig:frequentRoutesDiagram} pode se observar a estrutura desta que
 
 \begin{figure}[hbtp]
     \centering
-        \includegraphics[width=0.5\textwidth]{images/frequentRoutesDiagram}
+        \includegraphics[width=0.4\textwidth]{images/frequentRoutesDiagram}
     \caption{Diagrama da query \textit{Frequent Routes}.}
     \label{fig:frequentRoutesDiagram}
 \end{figure}
@@ -74,7 +74,7 @@ Na Figura \ref{fig:profitablesAreasDiagram} pode-se observar um diagrama que dem
 
 \begin{figure}[hbtp]
     \centering
-        \includegraphics[width=0.5\textwidth]{images/profitableAreasDiagram}
+        \includegraphics[width=0.4\textwidth]{images/profitableAreasDiagram}
     \caption{Diagrama da query \textit{Profitables Areas}.}
     \label{fig:profitablesAreasDiagram}
 \end{figure}
@@ -91,8 +91,9 @@ group by pickup_grid_x, pickup_grid_y,
 insert into ProfitPerAreaStr;
 
 from e1 = TaxiSecStr ->
-   TaxiSecStr[e1.medallion == medallion 
-   and pickup_datetime - e1.dropoff_datetime > 30 mins]
+  TaxiSecStr[medallion == e1.medallion 
+  and pickup_datetime 
+   - e1.dropoff_datetime > 30 mins]
 select ? 
 insert into EmptyTaxisStr
 
@@ -106,25 +107,22 @@ Neste \textit{use case} espera-se que seja emitido um alerta quando o número de
 O diagrama na Figura \textbf{INSERIR FIGURA} demonstra a lógica da implementação desta \textit{query}.
 
 Em seguida, apresenta-se o excerto de código da \textit{query} em questão:
-
 \begin{lstlisting}[language=SQL]
 from TaxiSecStr#window.time(1 hour)
 select *
 insert into AvailableTaxisStr;
 
 from e1 = TaxiSecStr -> 
-  e2 = TaxiSecStr[medallion == e1.medallion]
+  e2 = TaxiSecStr[medallion==e1.medallion]
 select e1.medallion as taxi,
-  (e2.pickup_datetime 
-   - e1.dropoff_datetime) as idle_time
+  (e2.p_time-e1.d_time) as idle_time
 insert into IdleTimeTaxisStr;
 
-// idle_time is in seconds
-from IdleTimeTaxisStr#window.time(1 hour)
-select taxi, avg(idle_time)
+from IdleTimeTaxisStr
+select avg(idle_time) as avg_idle_time
+having avg_idle_time > 10 * 60
 insert into IdleTaxisStr;
 \end{lstlisting}
-
 
 
 \section{\textit{Congested Areas}}
@@ -135,7 +133,7 @@ A Figura \ref{fig:congestedAreasDiagram} expõe o racional na construção desta
 
 \begin{figure}[hbtp]
     \centering
-        \includegraphics[width=0.5\textwidth]{images/congestedAreas}
+        \includegraphics[width=0.4\textwidth]{images/congestedAreas}
     \caption{Diagrama da query \textit{Congested Areas}.}
     \label{fig:congestedAreasDiagram}
 \end{figure}
@@ -143,16 +141,16 @@ A Figura \ref{fig:congestedAreasDiagram} expõe o racional na construção desta
 Finalmente, apresenta-se o código siddhi da \textit{query} \textit{congested areas}:
 
 \begin{lstlisting}[language=SQL]
-from every e1 = TaxiSecStr,
-  e2 = TaxiSecStr[medallion == e1.medallion
-  and ride_duration > e1.ride_duration]
-  e3 = TaxiSecStr[medallion == e2.medallion
-  and ride_duration < e2.ride_duration]
-  e4 = TaxiSecStr[medallion == e3.medallion
-  and ride_duration > e3.ride_duration],
-  e5 = TaxiSecStr[medallion == e4.medallion
-  and ride_duration > e4.ride_duration],
-  e6 = TaxiSecStr[medallion == e5.medallion
+from every e1 = TaxiSecStr ->
+  e2 = TaxiSecStr[medallion==e1.medallion
+  and ride_duration > e1.ride_duration] ->
+  e3 = TaxiSecStr[medallion==e2.medallion
+  and ride_duration < e2.ride_duration] ->
+  e4 = TaxiSecStr[medallion==e3.medallion
+  and ride_duration > e3.ride_duration] ->
+  e5 = TaxiSecStr[medallion==e4.medallion
+  and ride_duration > e4.ride_duration] ->
+  e6 = TaxiSecStr[medallion==e5.medallion
   and ride_duration > e5.ride_duration]
 select e2.pickup_grid_x as grid_x,
   e2.pickup_grid_y as grid_y
@@ -169,7 +167,7 @@ O fluxo da Figura \ref{fig:pleasantDriverDiagram} demonstra a construção desta
 
 \begin{figure}[hbtp]
     \centering
-        \includegraphics[width=0.5\textwidth]{images/pleasantDriver}
+        \includegraphics[width=0.4\textwidth]{images/pleasantDriver}
     \caption{Diagrama da query \textit{Most Pleasant Taxi Driver}.}
     \label{fig:pleasantDriverDiagram}
 \end{figure}
