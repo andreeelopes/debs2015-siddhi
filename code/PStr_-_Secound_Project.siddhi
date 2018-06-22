@@ -109,17 +109,18 @@ increase in their duration. For that, there should be alerts when a taxi has a p
 the duration of the ride that is followed by at least 3 rides all increasing in their 
 duration. The alert should contain the location 
 where the taxi started the ride which had the peak duration.
-
-
-from every e1 = TaxiSecStr,
-            e2 = TaxiSecStr[e2.medallion == e1.medallion and e2.ride_duration > e1.ride_duration],
-            e3 = TaxiSecStr[e3.medallion == e2.medallion and e3.ride_duration > e2.ride_duration],
-            e4 = TaxiSecStr[e4.medallion == e3.medallion and e4.ride_duration > e3.ride_duration]
-from every e1 = TaxiSecStr,
-            e2 = TaxiSecStr[e2.medallion == e1.medallion and (e2.ride_duration > e1.ride_duration or e2[last].ride_duration < e2[last-1].ride_duration)]<2:2>
-select e1.medallion as medallion, e1.pickup_grid_x as grid_x, e1.pickup_grid_y as grid_y
-insert into CongestedAreasStr;
 */
+
+from every e1 = TaxiSecStr,
+  e2 = TaxiSecStr[medallion == e1.medallion and ride_duration > e1.ride_duration]
+  e3 = TaxiSecStr[medallion == e2.medallion and ride_duration < e2.ride_duration]
+  e4 = TaxiSecStr[medallion == e3.medallion and ride_duration > e3.ride_duration],
+  e5 = TaxiSecStr[medallion == e4.medallion and ride_duration > e4.ride_duration],
+  e6 = TaxiSecStr[medallion == e5.medallion and ride_duration > e5.ride_duration]
+select e2.pickup_grid_x as grid_x,
+  e2.pickup_grid_y as grid_y
+insert into CongestedAreasStr;
+
 /*
 To distinguish the most pleasant taxi drivers, it should be nice to have an event, 
 emitted once a day, signalling the taxi driver with the highest total amount of tips in that day
