@@ -74,7 +74,7 @@ Na Figura \ref{fig:profitablesAreasDiagram} pode-se observar um diagrama que dem
 
 \begin{figure}[hbtp]
     \centering
-        \includegraphics[width=0.4\textwidth]{images/profitableAreasDiagram}
+        \includegraphics[width=0.4\textwidth]{images/profitableAreasDiagram_v3}
     \caption{Diagrama da query \textit{Profitables Areas}.}
     \label{fig:profitablesAreasDiagram}
 \end{figure}
@@ -95,7 +95,8 @@ from e1 = TaxiSecStr ->
 select dropoff_gridID as areaID
 insert into EmptyTaxisAreasStr;
 
-partition with (areaID of RevenuePerAreaStr)
+partition with 
+   (areaID of RevenuePerAreaStr)
 begin
   from EmptyTaxisAreasStr
   select areaID, count(*) as emptyTaxis
@@ -115,7 +116,14 @@ end;
 
 Neste \textit{use case} espera-se que seja emitido um alerta quando o número de táxis disponíveis torna-se superior ao pretendido. Para tal, deverá ser publicado um aviso quando o tempo de paragem médio (\textit{idle time}) de todos os táxis é superior a 10 minutos. Define-se como tempo de paragem, o período de tempo entre uma \textit{dropoff} e uma \textit{pickup}. Finalmente, assume-se que um táxi encontra-se disponível se tiver realizado pelo menos uma viagem na última hora.
 
-O diagrama na Figura \textbf{INSERIR FIGURA} demonstra a lógica da implementação desta \textit{query}.
+O diagrama na Figura \ref{fig:idleTaxisDiagram} demonstra a lógica da implementação desta \textit{query}.
+
+\begin{figure}[hbtp]
+    \centering
+        \includegraphics[width=0.4\textwidth]{images/idleTaxisDiagram}
+    \caption{Diagrama da query \textit{Idle Taxis}.}
+    \label{fig:idleTaxisDiagram}
+\end{figure}
 
 Em seguida, apresenta-se o excerto de código da \textit{query} em questão:
 \begin{lstlisting}[language=SQL]
@@ -123,8 +131,9 @@ from TaxiSecStr#window.time(1 hour)
 select *
 insert into AvailableTaxisStr;
 
-from e1 = TaxiSecStr -> 
-  e2 = TaxiSecStr[medallion==e1.medallion]
+from e1 = AvailableTaxisStr -> 
+  e2 = AvailableTaxisStr[medallion
+    == e1.medallion]
 select e1.medallion as taxi,
   (e2.p_time-e1.d_time) as idle_time
 insert into IdleTimeTaxisStr;
@@ -178,10 +187,12 @@ O fluxo da Figura \ref{fig:pleasantDriverDiagram} demonstra a construção desta
 
 \begin{figure}[hbtp]
     \centering
-        \includegraphics[width=0.4\textwidth]{images/pleasantDriver}
+    \includegraphics[width=0.4\textwidth]{images/pleasantDriver}
     \caption{Diagrama da query \textit{Most Pleasant Taxi Driver}.}
     \label{fig:pleasantDriverDiagram}
 \end{figure}
+
+
 
 Por último, no segmento de código seguinte apresenta-se a solução referente a este \textit{use case}:
 
