@@ -48,11 +48,11 @@ O código siddhi que implementa esta \textit{query} é o seguinte:
 
 \begin{lstlisting}[language=SQL]
 from TaxiSecStr#window.time(30 minutes)
-select pickup_grid_x, pickup_grid_y, 
-	dropoff_grid_x, dropoff_grid_y,
-	count(*) as frequency
-group by pickup_grid_x, pickup_grid_y,
- dropoff_grid_x, dropoff_grid_y
+select pickup_gridID,
+  dropoff_gridID,
+  count(*) as frequency
+group by pickup_gridID,
+  dropoff_gridID
 order by frequency DESC
 insert into RouteFrequencyStr;
 
@@ -83,21 +83,32 @@ O código siddhi que implementa esta \textit{query} é o seguinte:
 
 \begin{lstlisting}[language=SQL]
 from TaxiSecStr#window.time(15 min)
-select pickup_grid_x, pickup_grid_y,
-   dropoff_grid_x, dropoff_grid_y,
-   avg(FareTrip) as profit
-group by pickup_grid_x, pickup_grid_y,
-   dropoff_grid_x, dropoff_grid_y
-insert into ProfitPerAreaStr;
+select pickup_gridID as areaID
+   avg(FareTrip) as revenue
+group by pickup_gridID
+insert into RevenuePerAreaStr;
 
 from e1 = TaxiSecStr ->
-  TaxiSecStr[medallion == e1.medallion 
+  TaxiSecStr[medallion==e1.medallion 
   and pickup_datetime 
-   - e1.dropoff_datetime > 30 mins]
-select ? 
-insert into EmptyTaxisStr
+  - e1.dropoff_datetime>30 mins]
+select dropoff_gridID as areaID
+insert into EmptyTaxisAreasStr;
 
- 
+partition with (areaID of RevenuePerAreaStr)
+begin
+  from EmptyTaxisAreasStr
+  select areaID, count(*) as emptyTaxis
+  insert into #EmptyTaxisPerAreaStr;
+
+  from RevenuePerAreaStr as A 
+            join
+  #EmptyTaxisPerAreaStr as B 
+    on A.areaID == B.areaID
+  select A.areaID,
+    revenue/emptyTaxis as profit
+  insert into ProfitPerAreaStr;
+end;
 \end{lstlisting}
 
 \section{\textit{Idle Taxis}}
@@ -175,7 +186,7 @@ O fluxo da Figura \ref{fig:pleasantDriverDiagram} demonstra a construção desta
 Por último, no segmento de código seguinte apresenta-se a solução referente a este \textit{use case}:
 
 \begin{lstlisting}[language=SQL]
-from TaxiSecStr#window.timeBatch(24 hours)
+from TaxiSecStr#window.timeBatch(24 hour)
 select driver, 
   sum(tip_amount) as tips_total
 group by driver
