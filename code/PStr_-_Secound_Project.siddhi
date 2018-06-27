@@ -2,16 +2,27 @@
 
 --SOURCES
 
-@info(name = 'input stream') 
+@source( type='kafka',
+         topic.list='debs',
+         partition.no.list='0',
+         threading.option='single.thread',
+         group.id="group",
+         bootstrap.servers='localhost:9092',
+         @map(type='csv') )
+--@info(name = 'input stream') 
 define stream TaxiRidesProductionStream (medallion string, hack_license string, pickup_datetime string, dropoff_datetime string, trip_time_in_secs double, trip_distance double, pickup_longitude double, pickup_latitude double, dropoff_longitude double, dropoff_latitude double, payment_type string, fare_amount double, surcharge double, mta_tax double, tip_amount double, tolls_amount double, total_amount double);
-
 
 --SINKS
 
-@sink(type='log', prefix='Frequent Routes')
+/*
+@sink(type='log')
+define stream TestKafkaStr (medallion string);
+*/
+
+--@sink(type='log', prefix='Frequent Routes')
 define stream TopFreqRoutesStr(pickup_gridID string, dropoff_gridID string, frequency long);
 
-@sink(type='log', prefix='Profitable Areas')
+--@sink(type='log', prefix='Profitable Areas')
 define stream ProfitPerAreaStr(areaID string, profit double);
 
 --@sink(type='log', prefix='Idle Taxi')
@@ -20,7 +31,7 @@ define stream IdleTaxisStr (avg_idle_time double);
 --@sink(type='log', prefix='Congested Areas')
 define stream CongestedAreasStr (areaID string);
 
---@sink(type='log', prefix= 'Pleasant Driver') 
+@sink(type='log', prefix= 'Pleasant Driver') 
 define stream PleasantDriverStr (medallion string, tips_total double);
 
 --Auxiliary Streams
@@ -42,6 +53,13 @@ define stream RouteFrequencyStr (pickup_gridID string, dropoff_gridID string, fr
 define stream TodayDriversTips (medallion string, tips_total double);
 
 --QUERIES
+
+/*
+--Testing Kafka
+from TaxiRidesProductionStream
+select medallion
+insert into TestKafkaStr;
+*/
 
 -- Transform longitude and latitude to grid cells, and adds the ride_duration in seconds
 @info(name = 'transform coordinates to sectors')
@@ -139,7 +157,7 @@ To distinguish the most pleasant taxi drivers, it should be nice to have an even
 emitted once a day, signalling the taxi driver with the highest total amount of tips in that day
 */
 
-from TaxiSecStr#window.timeBatch(24 hour)
+from TaxiSecStr#window.timeBatch(1 min)
 select medallion, sum(tip_amount) as tips_total
 group by medallion
 order by tips_total DESC
