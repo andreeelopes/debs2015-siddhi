@@ -30,8 +30,33 @@ Almada, Portugal}
 
 
 \section{Introdução}
+Contexto
 
-\section{\textit{Frequent Routes}}
+CEPs (breve história)
+
+Objectivo (em oposição ao primeiro trabalho, manutenção e flexibilidade)
+
+	debs
+	
+	outras queries
+	
+	visualização
+	
+	comparação
+	
+
+	
+\section{\textit{Setup}}
+kafka (zookeeper, producer)
+stream processor studio
+siddhiql
+
+
+\section{\textit{Queries}}
+Apresentem para para cada interrogação a sua implementação eventualmente ilustrem com alguns resultados 
+e com os diagramas das queries
+
+\subsection{\textit{Frequent Routes}}
 
 O objectivo desta primeira \textit{query} é achar o \textit{top} 10 das rotas mais frequentes durante um período de 30 minutos. Um rota é representada por uma \textit{cell} inicial e uma \textit{cell} final.
 
@@ -61,8 +86,7 @@ select *
 insert into TopFreqRoutesStr;
 \end{lstlisting}
 
-
-\section{\textit{Profitables Areas}}
+\subsection{\textit{Profitables Areas}}
 
 Nesta query pretende-se identificar, de forma contínua, as áreas que são mais lucrativas para os taxistas. Para tal, o lucro de uma área é definido pelas receitas geradas nessa área a dividir pelo número de táxis vazios nessa mesma área.
 
@@ -112,7 +136,7 @@ begin
 end;
 \end{lstlisting}
 
-\section{\textit{Idle Taxis}}
+\subsection{\textit{Idle Taxis}}
 
 Neste \textit{use case} espera-se que seja emitido um alerta quando o número de táxis disponíveis torna-se superior ao pretendido. Para tal, deverá ser publicado um aviso quando o tempo de paragem médio (\textit{idle time}) de todos os táxis é superior a 10 minutos. Define-se como tempo de paragem, o período de tempo entre uma \textit{dropoff} e uma \textit{pickup}. Finalmente, assume-se que um táxi encontra-se disponível se tiver realizado pelo menos uma viagem na última hora.
 
@@ -145,7 +169,7 @@ insert into IdleTaxisStr;
 \end{lstlisting}
 
 
-\section{\textit{Congested Areas}}
+\subsection{\textit{Congested Areas}}
 
 Nesta secção ir-se-à implementar uma \textit{query} que emita as localizações onde possivelmente poderá haver congestionamentos no trânsito. Para tal, dever-se-á detetar picos nas durações das viagens dos táxis que são seguidos por pelo menos 3 viagens todas estas com durações crescentes.
 
@@ -179,7 +203,7 @@ insert into CongestedAreasStr;
 
 
 
-\section{\textit{Most Pleasant Taxi Drivers}}
+\subsection{\textit{Most Pleasant Taxi Drivers}}
 
 Para recompensar os condutores de táxis mais simpáticos é necessário que seja emitido, uma vez por dia, o taxista que recebeu mais gorjetas nesse dia.
 
@@ -209,7 +233,26 @@ select *
 insert into PleasantDriverStr;
 \end{lstlisting}
 
+\section{\textit{Dashboard}} 
+		Apresentação geral
+		
+		E detalhe do setup e implementação 
+		
+\section{\textit{Performance comparison}} 
+comparar com primeiro trabalho
+		
 \section{Conclusão} 
+-manutenção e flexibilidade vs performance
+
+-documentação reduzida
+
+-detalhes de implementação seriam importantes para entender como funcionam as janelas. Será como no CQL? Não há muita informação disponível. Resulta numa dificuldade de saber onde pôr as janelas
+
+-stream processor studio, o editor é bastante mau devido a quão vago são os erros que dá
+
+-Linguagem alto nível bastante mais expressiva
+
+
 
 
 \bibliography{bibliography}
