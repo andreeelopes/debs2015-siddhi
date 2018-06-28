@@ -30,31 +30,32 @@ Almada, Portugal}
 
 
 \section{Introdução}
-Contexto
+Este projecto foi desenvolvido no âmbito da cadeira de Processamento de \textit{Streams} (PStr). O objectivo passa por implementar de novo as \textit{queries} do primeiro projecto de PStr, nomeadamente as do  DEBS Grand Challenges 2015. A diferença é que desta vez serão implementadas usando SiddhiQL do WSO2 no lugar do SparkStreaming. Para além destas, serão implementadas mais 3 \textit{queries} que serão descritas mais à frente.
 
-CEPs (breve história)
+O WSO2 Complex Event Processor (CEP) ajuda a identificar os eventos e padrões mais significativos vindos de múltiplas \textit{sources}, analisando o seu impacto e agindo em \textit{real-time}. O WSO2 CEP apoia-se numa linguagem designada SiddhiQL, que é fácil de usar devido à sua semelhança ao SQL, sendo esta especializada em \textit{queries} complexas envolvendo janelas e detecção tanto de padrões como de sequências.
 
-Objectivo (em oposição ao primeiro trabalho, manutenção e flexibilidade)
 
-	debs
-	
-	outras queries
-	
-	visualização
-	
-	comparação
-	
+A implementação de \textit{queries} semelhantes às do primeiro projecto permitirá uma comparação entre as duas tecnologias em termos de performance, manutenção e flexibilidade. A manutenção será avaliada através da comparação da simplicidade do código, pois será possível fazer o paralelo entre o código das \textit{queries} em SiddhiQL e em SparkStreaming, assinalando os benefícios de utilizar uma linguagem de alto nível. No que toca à flexibilidade, o SiddhiQL oferece uma semântica de sequência que permite a identificação de padrões complexos.
 
+	
 	
 \section{\textit{Setup}}
-kafka (zookeeper, producer)
-stream processor studio
-siddhiql
+
+A \textit{source} dos eventos processados pelo WSO2 CEP é o Apache Kafka. De forma a executar o Kafka é necessário primeiro executar uma instância do Zookeper que tem como benefício a coordenação dos \textit{brokers} do Kafka, o que neste caso não seria necessário, mas o Kafka tem essa obrigatoriedade.
+
+Tendo o \textit{broker} activo, é necessário executar um produtor Kafka, neste caso implementado em Java, que emite os eventos de corridas de táxis com uma cadência configurável. Este produtor lê de um \textit{dataset}, no qual cada linha corresponde a uma viagem de táxi, e emite para o \textit{broker}. Sendo o Kafka um sistema \textit{topic-based}, o tópico no qual estes eventos são publicados é designado "debs". A cadência de eventos foi definida como sendo 60, o que significa que 1 minuto corresponderá a 1 segundo.
+
+De forma a registar as \textit{queries} SiddhiQL que implementam as interrogações definidas, utilizou-se o Stream Processor Studio do WSO2. Este permite, entre outros, instalar \textit{queries} e definir os adaptadores necessários, que permitem consumir a \textit{stream} de eventos através do \textit{broker} Kafka. Para isto, é necessário definir qual o tópico que se pretende subscrever, e como referido anteriormente no caso da produção dos eventos, será o "debs".
+
+A cada evento que chega ao CEP \textit{engine} serão executadas as \textit{queries} instaladas, resultando destas novas \textit{streams}. Por este motivo é importante definir um conjunto de \textit{sinks}, para as quais serão emitidos os novos eventos produzidos pelo processamento dos eventos emitidos pelas \textit{sources}. Nesta implementação foi definido que a \textit{sink} é o \textit{broker} do Kafka, sendo que para cada \textit{query} existirá um produtor de eventos com um tópico diferente. Esta implementação permitirá que qualquer aplicação subscreva a \textit{stream} de \textit{output} que desejar, tendo os dados processados em \textit{real-time}.
+ 
+
+
+
 
 
 \section{\textit{Queries}}
-Apresentem para para cada interrogação a sua implementação eventualmente ilustrem com alguns resultados 
-e com os diagramas das queries
+Para cada \textit{query} será apresentada a sua descrição, a sua implementação acompanhada de uma explicação e os seus resultados.
 
 \subsection{\textit{Frequent Routes}}
 
