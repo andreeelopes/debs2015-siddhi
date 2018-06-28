@@ -26,8 +26,10 @@ Almada, Portugal}
 }
 
 \maketitle
-
-
+\section{TODO}
+\begin{itemize}
+    \item meter o trip time in secs em vez da salgalhada do calculo que está agora
+\end{itemize}
 
 \section{Introdução}
 Este projecto foi desenvolvido no âmbito da cadeira de Processamento de \textit{Streams} (PStr). O objectivo passa por implementar de novo as \textit{queries} do primeiro projecto de PStr, nomeadamente as do  DEBS Grand Challenges 2015. A diferença é que desta vez serão implementadas usando SiddhiQL do WSO2 no lugar do SparkStreaming. Para além destas, serão implementadas mais 3 \textit{queries} que serão descritas mais à frente.
@@ -50,41 +52,37 @@ De forma a registar as \textit{queries} SiddhiQL que implementam as interrogaç�
 A cada evento que chega ao CEP \textit{engine} serão executadas as \textit{queries} instaladas, resultando destas novas \textit{streams}. Por este motivo é importante definir um conjunto de \textit{sinks}, para as quais serão emitidos os novos eventos produzidos pelo processamento dos eventos emitidos pelas \textit{sources}. Nesta implementação foi definido que a \textit{sink} é o \textit{broker} do Kafka, sendo que para cada \textit{query} existirá um produtor de eventos com um tópico diferente. Esta implementação permitirá que qualquer aplicação subscreva a \textit{stream} de \textit{output} que desejar, tendo os dados processados em \textit{real-time}.
  
 
-
-
-
-
 \section{\textit{Queries}}
-Para cada \textit{query} será apresentada a sua descrição, a sua implementação acompanhada de uma explicação e os seus resultados.
+Para cada \textit{query} será apresentada a sua descrição e a sua implementação acompanhada de uma explicação. Importa também referir que sempre que se referir a minutos, na \textit{query} corresponde a segundos (como referido na introdução). Outro dos pontos importantes a ter em conta nesta secção é a descrição da \textit{query} \textbf{TaxiRidesStr} que é transversal a todas as interrogações. Esta consiste numa \textit{query} que tem como \textit{input} a \textit{stream} de produção, sendo que esta efetua algum pré-processamento necessário, como é o caso da transformação das coordenadas esféricas em \textit{cells}.
+
 
 \subsection{\textit{Frequent Routes}}
 
-O objectivo desta primeira \textit{query} é achar o \textit{top} 10 das rotas mais frequentes durante um período de 30 minutos. Um rota é representada por uma \textit{cell} inicial e uma \textit{cell} final.
+O objetivo desta primeira \textit{query} é calcular o \textit{top} 10 das rotas mais frequentes durante um período de 30 minutos. Uma rota é representada por uma \textit{cell} inicial e uma \textit{cell} final.
 
-Na Figura \ref{fig:frequentRoutesDiagram} pode se observar a estrutura desta query. Primeiramente efetua-se uma janela deslizante de 30 minutos sobre o input. Finalmente, seleciona-se os 10 resultados com a frequência mais alta.
+Na Figura \ref{fig:frequentRoutesDiagram} pode-se observar a estrutura desta \textit{query}:
+\begin{itemize}
+    \item \textbf{TopFreqRoutesStr}: Esta \textit{query} aplica uma janela deslizante de 30 segundos. Após isto, agrupa por rota e conta a frequência de corridas de táxi em cada uma das rotas. Finalmente, faz \textit{output} apenas do \textit{top} 10 das rotas mais frequentadas. 
+\end{itemize} 
 
 \begin{figure}[hbtp]
     \centering
-        \includegraphics[width=0.4\textwidth]{images/frequentRoutesDiagram}
+        \includegraphics[width=0.4\textwidth]{images/frequentRoutes}
     \caption{Diagrama da query \textit{Frequent Routes}.}
     \label{fig:frequentRoutesDiagram}
 \end{figure}
 
-O código siddhi que implementa esta \textit{query} é o seguinte:
+O código SiddhiQL que implementa esta \textit{query} é o seguinte:
 
 \begin{lstlisting}[language=SQL]
-from TaxiSecStr#window.time(30 minutes)
-select pickup_gridID,
-  dropoff_gridID,
-  count(*) as frequency
-group by pickup_gridID,
-  dropoff_gridID
-order by frequency DESC
-insert into RouteFrequencyStr;
-
-from RouteFrequencyStr#window.length(10)
-select *
-insert into TopFreqRoutesStr;
+  from TaxiRidesStr#window.time(30 sec)
+  select pickup_gridID,
+         dropoff_gridID,
+         count(*) as frequency
+  group by pickup_gridID, dropoff_gridID
+  order by frequency DESC
+  limit 10
+  insert into TopFreqRoutesStr;
 \end{lstlisting}
 
 \subsection{\textit{Profitables Areas}}
@@ -95,11 +93,17 @@ A receita gerada numa área é a média das \textit{fare} + \textit{tip} de toda
 
 O número de táxis vazios num dada área consiste na soma dos táxis que efetuaram uma \textit{dropoff} nessa área mas que após 30 minutos ainda não efetuaram uma \textit{pickup}.
 
-Na Figura \ref{fig:profitablesAreasDiagram} pode-se observar um diagrama que demonstra o fluxo desta \textit{query}.
+Na Figura \ref{fig:profitablesAreasDiagram} pode-se observar um diagrama que demonstra o fluxo desta \textit{query}:
+\begin{itemize}
+\item \textbf{EmptyTaxisStr:} Detecção dos táxis vazios através de um padrão de \textit{absence} de uma corrida de táxis.
+\item \textbf{EmptyTaxisPerAreaStr:} Determinação do número de táxis vazios por área.
+\item \textbf{RevenuePerAreaStr:} Cálculo da receita média gerada nessa mesma área.
+\item \textbf{ProfitableAreasStr:} Junção das duas \textit{streams} anteriores e determinação do lucro por área através da divisão da receita gerada na área pelo número de táxis vazios da mesma.
+\end{itemize}
 
 \begin{figure}[hbtp]
     \centering
-        \includegraphics[width=0.4\textwidth]{images/profitableAreasDiagram_v3}
+        \includegraphics[width=0.4\textwidth]{images/profitableAreas}
     \caption{Diagrama da query \textit{Profitables Areas}.}
     \label{fig:profitablesAreasDiagram}
 \end{figure}
@@ -107,52 +111,62 @@ Na Figura \ref{fig:profitablesAreasDiagram} pode-se observar um diagrama que dem
 O código siddhi que implementa esta \textit{query} é o seguinte:
 
 \begin{lstlisting}[language=SQL]
-from TaxiSecStr#window.time(15 min)
-select pickup_gridID as areaID
-   avg(FareTrip) as revenue
+partition with 
+  (medallion of TaxiRidesStr)
+begin
+  from e1 = TaxiRidesStr ->
+    not TaxiRidesStr[medallion == 
+    e1.medallion] for 30 sec
+  select e1.medallion, 
+    e1.dropoff_gridID
+    insert into EmptyTaxisStr;
+end;
+
+from EmptyTaxisStr#window.time(30 sec)
+select dropoff_gridID as areaID,
+count(*) as emptyTaxis
+group by dropoff_gridID
+insert into EmptyTaxisPerAreaStr;
+
+from TaxiRidesStr#window.time(15 sec)
+select pickup_gridID as areaID,
+  avg(fare_amount + tip_amount) as revenue
 group by pickup_gridID
 insert into RevenuePerAreaStr;
 
-from e1 = TaxiSecStr ->
-  TaxiSecStr[medallion==e1.medallion 
-  and pickup_datetime 
-  - e1.dropoff_datetime>30 mins]
-select dropoff_gridID as areaID
-insert into EmptyTaxisAreasStr;
-
-partition with 
-   (areaID of RevenuePerAreaStr)
-begin
-  from EmptyTaxisAreasStr
-  select areaID, count(*) as emptyTaxis
-  insert into #EmptyTaxisPerAreaStr;
-
-  from RevenuePerAreaStr as A 
-            join
-  #EmptyTaxisPerAreaStr as B 
-    on A.areaID == B.areaID
-  select A.areaID,
-    revenue/emptyTaxis as profit
-  insert into ProfitPerAreaStr;
-end;
+from RevenuePerAreaStr#window.time(15s) as A 
+join
+EmptyTaxisPerAreaStr#window.time(15s) as B 
+on A.areaID == B.areaID
+select A.areaID,
+  revenue/emptyTaxis as profit
+group by A.areaID
+order by profit DESC
+limit 10
+insert into ProfitableAreasStr;
 \end{lstlisting}
 
 \subsection{\textit{Idle Taxis}}
 
 Neste \textit{use case} espera-se que seja emitido um alerta quando o número de táxis disponíveis torna-se superior ao pretendido. Para tal, deverá ser publicado um aviso quando o tempo de paragem médio (\textit{idle time}) de todos os táxis é superior a 10 minutos. Define-se como tempo de paragem, o período de tempo entre uma \textit{dropoff} e uma \textit{pickup}. Finalmente, assume-se que um táxi encontra-se disponível se tiver realizado pelo menos uma viagem na última hora.
 
-O diagrama na Figura \ref{fig:idleTaxisDiagram} demonstra a lógica da implementação desta \textit{query}.
+O diagrama na Figura \ref{fig:idleTaxisDiagram} demonstra a lógica da implementação desta \textit{query}:
+\begin{itemize}
+    \item \textbf{AvailableTaxisStr:} Através de um janela temporal deslizante de uma hora são emitidos os táxis disponíveis, ou seja, os que emitiram eventos na última hora.
+    \item \textbf{IdleTimeTaxisStr:} Nesta \textit{query} é efetuada a determinação do período de tempo em que um táxi está desocupado. Este cálculo é feito pela subtração do instante em que ocorreu uma \textit{pickup} pelo instante da \textit{dropoff} da corrida anterior.
+    \item \textbf{AlertTooMuchAvailable:} Por último, é emitido um alerta das áreas cuja a média do tempo em que um táxi está desocupado é superior ao limite estabelecido (30 minutos).
+\end{itemize}
 
 \begin{figure}[hbtp]
     \centering
-        \includegraphics[width=0.4\textwidth]{images/idleTaxisDiagram}
+        \includegraphics[width=0.4\textwidth]{images/idleTime.png}
     \caption{Diagrama da query \textit{Idle Taxis}.}
     \label{fig:idleTaxisDiagram}
 \end{figure}
 
 Em seguida, apresenta-se o excerto de código da \textit{query} em questão:
 \begin{lstlisting}[language=SQL]
-from TaxiSecStr#window.time(1 hour)
+from TaxiRidesStr#window.time(1 hour)
 select *
 insert into AvailableTaxisStr;
 
@@ -172,10 +186,13 @@ insert into IdleTaxisStr;
 
 \subsection{\textit{Congested Areas}}
 
-Nesta secção ir-se-à implementar uma \textit{query} que emita as localizações onde possivelmente poderá haver congestionamentos no trânsito. Para tal, dever-se-á detetar picos nas durações das viagens dos táxis que são seguidos por pelo menos 3 viagens todas estas com durações crescentes.
+Nesta secção ir-se-à descrever a implementação de uma \textit{query} que emite as localizações onde, possivelmente, poderá haver congestionamentos no trânsito. Para tal, dever-se-à detectar picos nas durações das viagens dos táxis que são seguidos por pelo menos 3 viagens, todas estas com durações crescentes.
 
-A Figura \ref{fig:congestedAreasDiagram} expõe o racional na construção desta \textit{query}.
+Na Figura \ref{fig:congestedAreasDiagram} pode-se observar a estrutura desta \textit{query}:
 
+\begin{itemize}
+    \item \textbf{CongestedAreaStr}: Esta \textit{query} consiste na identificação do padrão anteriormente referido. Por cada  deteção desse padrão, será feito \textit{output} de um evento que tem como atributos o pico de duração de uma viagem naquele táxi e um identificador da área no qual foi feito o \textit{pickup} da corrida de táxi na qual a duração atingiu o pico.
+\end{itemize} 
 \begin{figure}[hbtp]
     \centering
         \includegraphics[width=0.4\textwidth]{images/congestedAreas}
@@ -183,22 +200,22 @@ A Figura \ref{fig:congestedAreasDiagram} expõe o racional na construção desta
     \label{fig:congestedAreasDiagram}
 \end{figure}
 
-Finalmente, apresenta-se o código siddhi da \textit{query} \textit{congested areas}:
+O código SiddhiQL que implementa esta \textit{query} é o seguinte:
 
 \begin{lstlisting}[language=SQL]
-from every e1 = TaxiSecStr ->
-  e2 = TaxiSecStr[medallion==e1.medallion
-  and ride_duration > e1.ride_duration] ->
-  e3 = TaxiSecStr[medallion==e2.medallion
-  and ride_duration < e2.ride_duration] ->
-  e4 = TaxiSecStr[medallion==e3.medallion
-  and ride_duration > e3.ride_duration] ->
-  e5 = TaxiSecStr[medallion==e4.medallion
-  and ride_duration > e4.ride_duration] ->
-  e6 = TaxiSecStr[medallion==e5.medallion
+from every e1 = TaxiRidesStr->
+  e2=TaxiRidesStr[medallion == e1.medallion 
+  and ride_duration > e1.ride_duration]->
+  e3=TaxiRidesStr[medallion == e2.medallion 
+  and ride_duration < e2.ride_duration]->
+  e4=TaxiRidesStr[medallion == e3.medallion
+  and ride_duration > e3.ride_duration]->
+  e5=TaxiRidesStr[medallion == e4.medallion 
+  and ride_duration > e4.ride_duration]->
+  e6=TaxiRidesStr[medallion == e5.medallion
   and ride_duration > e5.ride_duration]
-select e2.pickup_grid_x as grid_x,
-  e2.pickup_grid_y as grid_y
+select e2.pickup_gridID as areaID, 
+       e2.ride_duration as peak_duration
 insert into CongestedAreasStr;
 \end{lstlisting}
 
@@ -207,8 +224,10 @@ insert into CongestedAreasStr;
 \subsection{\textit{Most Pleasant Taxi Drivers}}
 
 Para recompensar os condutores de táxis mais simpáticos é necessário que seja emitido, uma vez por dia, o taxista que recebeu mais gorjetas nesse dia.
-
-O fluxo da Figura \ref{fig:pleasantDriverDiagram} demonstra a construção desta \textit{query}.
+Na Figura \ref{fig:pleasantDriverDiagram} pode-se observar a estrutura desta \textit{query}:
+\begin{itemize}
+    \item \textbf{PleasantDriverStr}: Esta \textit{query} aplica uma janela em \textit{batch} de 24 minutos. Após isto, agrupa por número de carta de condução (identificação do taxista) e calcula a soma das gorjetas de cada taxista. Finalmente, faz \textit{output} apenas do \textit{top} 10 dos taxistas com a quantia mais elevada de gorjeta. 
+\end{itemize} 
 
 \begin{figure}[hbtp]
     \centering
@@ -217,21 +236,16 @@ O fluxo da Figura \ref{fig:pleasantDriverDiagram} demonstra a construção desta
     \label{fig:pleasantDriverDiagram}
 \end{figure}
 
-
-
-Por último, no segmento de código seguinte apresenta-se a solução referente a este \textit{use case}:
+O código SiddhiQL que implementa esta \textit{query} é o seguinte:
 
 \begin{lstlisting}[language=SQL]
-from TaxiSecStr#window.timeBatch(24 hour)
-select driver, 
-  sum(tip_amount) as tips_total
-group by driver
-order by tips_total DESC
-insert into TodayDriversTips;
-
-from TodayDriversTips#window.length(1)
-select *
-insert into PleasantDriverStr;
+  from TaxiSecStr#window.timeBatch(24 min)
+  select hack_license,
+         sum(tip_amount) as tips_total
+  group by hack_license
+  order by tips_total DESC
+  limit 1
+  insert into PleasantDriverStr;
 \end{lstlisting}
 
 \section{\textit{Dashboard}} 

@@ -24,7 +24,7 @@ define stream ProfitableAreasStr(areaID string, profit double);
 define stream AlertTooMuchAvailableStr (areaID string, avg_idle_time double);
 
 --@sink(type='log', prefix='Slow Taxi Alert')
-define stream SlowTaxiStr (areaID string, peak_duration long);
+define stream CongestedAreasStr (areaID string, peak_duration long);
 
 --@sink(type='log', prefix= 'Pleasant Driver') 
 define stream PleasantDriverStr (hack_license string, tips_total double);
@@ -34,7 +34,7 @@ define stream PleasantDriverStr (hack_license string, tips_total double);
 define stream AvailableTaxisStr (medallion string, hack_license string, pickup_gridID string, dropoff_gridID string, ride_duration long, tip_amount double, pickup_datetime string, dropoff_datetime string);
 
 --@sink(type='log', prefix='input') 
-define stream TaxiSecStr (medallion string, hack_license string, pickup_gridID string, dropoff_gridID string, ride_duration long, fare_amount double, tip_amount double, pickup_datetime string, dropoff_datetime string);
+define stream TaxiRidesStr (medallion string, hack_license string, pickup_gridID string, dropoff_gridID string, ride_duration long, fare_amount double, tip_amount double, pickup_datetime string, dropoff_datetime string);
 
 --@sink(type='log', prefix='emptytaxis:') 
 define stream EmptyTaxisPerAreaStr(areaID string, emptyTaxis long);
@@ -54,11 +54,11 @@ define stream IdleTimeTaxisStr (medallion string, areaID string, idle_time long)
 @info(name = 'transform coordinates to sectors')
 from TaxiRidesProductionStream[pickup_longitude != 0 and pickup_latitude != 0 and dropoff_longitude != 0 and dropoff_latitude != 0]
 select medallion, hack_license, str:concat(math:floor(math:abs(-74.913585 - pickup_longitude) / 0.0059986), ';', math:floor(math:abs(41.474937 - pickup_latitude) / 0.004491556)) as pickup_gridID, str:concat(math:floor(math:abs(-74.913585 - dropoff_longitude) / 0.0059986), ';',math:floor(math:abs(41.474937 - dropoff_latitude) / 0.004491556)) as dropoff_gridID, (time:timestampInMilliseconds(dropoff_datetime, 'yyyy-MM-dd HH:mm:ss') - time:timestampInMilliseconds(pickup_datetime, 'yyyy-MM-dd HH:mm:ss'))/1000 as ride_duration, fare_amount, tip_amount, pickup_datetime, dropoff_datetime
-insert into TaxiSecStr;
+insert into TaxiRidesStr;
 
 --Frequent Routes
 
-from TaxiSecStr#window.time(30 sec)
+from TaxiRidesStr#window.time(30 sec)
 select pickup_gridID, dropoff_gridID, count(*) as frequency
 group by pickup_gridID, dropoff_gridID
 order by frequency DESC
@@ -74,9 +74,9 @@ last 30 minutes
 */
 
 
-partition with (medallion of TaxiSecStr)
+partition with (medallion of TaxiRidesStr)
 begin
-	from e1 = TaxiSecStr -> not TaxiSecStr[medallion == e1.medallion] for 30 sec
+	from e1 = TaxiRidesStr -> not TaxiRidesStr[medallion == e1.medallion] for 30 sec
 	select e1.medallion, e1.dropoff_gridID
 	insert into EmptyTaxisStr;
 end;
@@ -86,7 +86,7 @@ select dropoff_gridID as areaID, count(*) as emptyTaxis
 group by dropoff_gridID
 insert into EmptyTaxisPerAreaStr;
 
-from TaxiSecStr#window.time(15 sec)
+from TaxiRidesStr#window.time(15 sec)
 select pickup_gridID as areaID, avg(fare_amount + tip_amount) as revenue
 group by pickup_gridID
 insert into RevenuePerAreaStr;
@@ -106,7 +106,7 @@ The idle time of a taxi is the time mediating between the drop off of a ride, an
 It is assumed that a taxi is available if it had at least one ride in the last hour.
 */
 
-from TaxiSecStr#window.time(1 min)
+from TaxiRidesStr#window.time(1 min)
 select medallion, hack_license, pickup_gridID, dropoff_gridID, ride_duration, tip_amount, pickup_datetime, dropoff_datetime
 insert into AvailableTaxisStr;
 
@@ -132,17 +132,17 @@ duration. The alert should contain the location
 where the taxi started the ride which had the peak duration.
 */
 
-from every e1 = TaxiSecStr ->
-  e2 = TaxiSecStr[medallion == e1.medallion and ride_duration > e1.ride_duration] ->
-  e3 = TaxiSecStr[medallion == e2.medallion and ride_duration < e2.ride_duration] ->
-  e4 = TaxiSecStr[medallion == e3.medallion and ride_duration > e3.ride_duration] ->
-  e5 = TaxiSecStr[medallion == e4.medallion and ride_duration > e4.ride_duration] ->
-  e6 = TaxiSecStr[medallion == e5.medallion and ride_duration > e5.ride_duration]
+from every e1 = TaxiRidesStr ->
+  e2 = TaxiRidesStr[medallion == e1.medallion and ride_duration > e1.ride_duration] ->
+  e3 = TaxiRidesStr[medallion == e2.medallion and ride_duration < e2.ride_duration] ->
+  e4 = TaxiRidesStr[medallion == e3.medallion and ride_duration > e3.ride_duration] ->
+  e5 = TaxiRidesStr[medallion == e4.medallion and ride_duration > e4.ride_duration] ->
+  e6 = TaxiRidesStr[medallion == e5.medallion and ride_duration > e5.ride_duration]
 select e2.pickup_gridID as areaID, e2.ride_duration as peak_duration
-insert into SlowTaxiStr;
+insert into CongestedAreasStr;
 
 /*
-from SlowTaxiStr#window.time(10 sec)
+from CongestedAreasStr#window.time(10 sec)
 select areaID, avg(duration) as avg_peak
 group by areaID
 insert into CongestedAreasStr;
@@ -153,7 +153,7 @@ To distinguish the most pleasant taxi drivers, it should be nice to have an even
 emitted once a day, signalling the taxi driver with the highest total amount of tips in that day
 */
 
-from TaxiSecStr#window.timeBatch(30 sec)
+from TaxiRidesStr#window.timeBatch(30 sec)
 select hack_license, sum(tip_amount) as tips_total
 group by hack_license
 order by tips_total DESC
