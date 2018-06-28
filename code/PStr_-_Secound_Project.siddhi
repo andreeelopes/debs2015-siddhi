@@ -16,7 +16,7 @@ define stream TaxiRidesProductionStream (medallion string, hack_license string, 
 --SINKS
 
 
---@sink(type='log', prefix='Frequent Routes')
+--sink(type='log', prefix='Frequent Routes')
 define stream TopFreqRoutesStr(pickup_gridID string, dropoff_gridID string, frequency long);
 
 --@sink(type='log', prefix='Profitable Areas')
@@ -28,7 +28,7 @@ define stream AlertTooMuchAvailableStr (avg_idle_time double);
 --@sink(type='log', prefix='Slow Taxi Alert')
 define stream SlowTaxiStr (areaID string, peak_duration long);
 
-@sink(type='log', prefix= 'Pleasant Driver') 
+--@sink(type='log', prefix= 'Pleasant Driver') 
 define stream PleasantDriverStr (medallion string, tips_total double);
 
 --Auxiliary Streams--
@@ -58,7 +58,6 @@ from TaxiRidesProductionStream[pickup_longitude != 0 and pickup_latitude != 0 an
 select medallion, hack_license, str:concat(math:floor(math:abs(-74.913585 - pickup_longitude) / 0.0059986), ';', math:floor(math:abs(41.474937 - pickup_latitude) / 0.004491556)) as pickup_gridID, str:concat(math:floor(math:abs(-74.913585 - dropoff_longitude) / 0.0059986), ';',math:floor(math:abs(41.474937 - dropoff_latitude) / 0.004491556)) as dropoff_gridID, (time:timestampInMilliseconds(dropoff_datetime, 'yyyy-MM-dd HH:mm:ss') - time:timestampInMilliseconds(pickup_datetime, 'yyyy-MM-dd HH:mm:ss'))/1000 as ride_duration, fare_amount, tip_amount, pickup_datetime, dropoff_datetime
 insert into TaxiSecStr;
 
-
 --Frequent Routes
 
 from TaxiSecStr#window.time(30 sec)
@@ -74,7 +73,7 @@ Profitability is defined as the median fare plus the
 tip for last 15 minutes divided by the number of taxi drivers
 who have dropped-off and have not taken a new trip in the
 last 30 minutes
-*/
+
 
 
 from TaxiSecStr#window.time(30 sec) 
@@ -105,14 +104,14 @@ group by A.areaID
 order by profit DESC
 limit 10
 insert into ProfitableAreasStr;
-
+*/
 /*
 To control possible periods of the day when the number of taxis available is too much, 
 the city wants to b e alerted whenever the average idle time of taxis is greater than a 
 given amount of time (say 10 minutes). 
 The idle time of a taxi is the time mediating between the drop off of a ride, and the pickup time of the following ride. 
 It is assumed that a taxi is available if it had at least one ride in the last hour.
-*/
+
 
 from TaxiSecStr#window.time(1 min)
 select medallion, hack_license, pickup_gridID, dropoff_gridID, ride_duration, tip_amount, pickup_datetime, dropoff_datetime
@@ -128,7 +127,7 @@ from IdleTimeTaxisStr
 select avg(idle_time) as avg_idle_time
 having avg_idle_time > 10 * 60
 insert into AlertTooMuchAvailableStr;
-
+*/
 
 
 /*
@@ -139,7 +138,7 @@ duration. The alert should contain the location
 where the taxi started the ride which had the peak duration.
 */
 
-from e1 = TaxiSecStr ->
+from every e1 = TaxiSecStr ->
   e2 = TaxiSecStr[medallion == e1.medallion and ride_duration > e1.ride_duration] ->
   e3 = TaxiSecStr[medallion == e2.medallion and ride_duration < e2.ride_duration] ->
   e4 = TaxiSecStr[medallion == e3.medallion and ride_duration > e3.ride_duration] ->
@@ -147,6 +146,7 @@ from e1 = TaxiSecStr ->
   e6 = TaxiSecStr[medallion == e5.medallion and ride_duration > e5.ride_duration]
 select e2.pickup_gridID as areaID, e2.ride_duration as peak_duration
 insert into SlowTaxiStr;
+
 /*
 from SlowTaxiStr#window.time(10 sec)
 select areaID, avg(duration) as avg_peak
