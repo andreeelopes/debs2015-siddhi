@@ -22,8 +22,12 @@ def createConsumer(topic):
 #ex: b'E0C54FD4238BC93F36CA25238F7E69C0-38,25'"
 def getPayload(msg):
     payload = msg.decode('UTF-8') #converter bytes para str
-    return payload.split('||')
-    
+    data = []
+    data.append((getLongitude(float(payload.split('||')[0].split(';')[0])), getLatitude(float(payload.split('||')[0].split(';')[1]))))  
+    data.append(payload.split('||')[1])
+    return data
+
+
 def getSorted(list_to_sort, column, limit):
     sorted_list = sorted(list_to_sort, key=lambda k: k[column], reverse = True) 
     return sorted_list[:limit]
@@ -50,10 +54,12 @@ payload = []
 
 for msg in c_profit_areas:
     payload.append(getPayload(msg.value))
-    print("debug")
     events = getSorted(payload, 1, 10)
     events_np = np.array(events)
     profits = events_np[:,1]
-    coords = #o que por aqui?!?
+    coords = events_np[:,0]
+    print("Coords:")
     print(coords)
+    print("Profits")
+    print(profits)
     
