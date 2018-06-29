@@ -58,12 +58,18 @@ Para cada \textit{query} será apresentada a sua descrição e a sua implementa�
 
 \subsection{\textit{Frequent Routes}}
 
+<<<<<<< HEAD
+O objectivo desta primeira \textit{query} é calcular o \textit{top} 10 das rotas mais frequentes durante um período de 30 minutos. Uma rota é representada por uma \textit{cell} inicial e uma \textit{cell} final.
+
+Na Figura \ref{fig:frequentRoutesDiagram} pode-se observar a estrutura desta \textit{query}. Primeiramente, efectua-se uma janela deslizante de 30 minutos sobre o input. Finalmente, selecciona-se os 10 resultados com a frequência mais alta.
+=======
 O objetivo desta primeira \textit{query} é calcular o \textit{top} 10 das rotas mais frequentes durante um período de 30 minutos. Uma rota é representada por uma \textit{cell} inicial e uma \textit{cell} final.
 
 Na Figura \ref{fig:frequentRoutesDiagram} pode-se observar a estrutura desta \textit{query}:
 \begin{itemize}
     \item \textbf{TopFreqRoutesStr}: Esta \textit{query} aplica uma janela deslizante de 30 segundos. Após isto, agrupa por rota e conta a frequência de corridas de táxi em cada uma das rotas. Finalmente, faz \textit{output} apenas do \textit{top} 10 das rotas mais frequentadas. 
 \end{itemize} 
+>>>>>>> c2287fca659f97bae81c6a55038de4385b6117c3
 
 \begin{figure}[hbtp]
     \centering
