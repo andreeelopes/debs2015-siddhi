@@ -15,18 +15,48 @@ define stream TaxiRidesProductionStream (medallion string, hack_license string, 
 --SINKS
 
 --sink(type='log', prefix='Frequent Routes')
+@sink(
+    type='kafka',
+    topic='freq_routes',
+    partition.no='0',
+    bootstrap.servers='localhost:9092',
+    @map(type='text', @payload('{{pickup_gridID}}||{{dropoff_gridID}}||{{frequency}}') ))
 define stream TopFreqRoutesStr(pickup_gridID string, dropoff_gridID string, frequency long);
 
 --@sink(type='log', prefix='Profitable Areas')
+@sink(
+    type='kafka',
+    topic='profit_areas',
+    partition.no='0',
+    bootstrap.servers='localhost:9092',
+    @map(type='text', @payload('{{areaID}}||{{profit}}') ))
 define stream ProfitableAreasStr(areaID string, profit double);
 
---@sink(type='log', prefix='Too Much Taxis Available')
+--@sink(type='log', prefix='Too Much Taxis Available')idle_taxis
+@sink(
+    type='kafka',
+    topic='idle_taxis',
+    partition.no='0',
+    bootstrap.servers='localhost:9092',
+    @map(type='text', @payload('{{areaID}}||{{avg_idle_time}}') ))
 define stream AlertTooMuchAvailableStr (areaID string, avg_idle_time double);
 
 --@sink(type='log', prefix='Slow Taxi Alert')
+@sink(
+    type='kafka',
+    topic='cong_areas',
+    partition.no='0',
+    bootstrap.servers='localhost:9092',
+    @map(type='text', @payload('{{areaID}}||{{peak_duration}}') ))
 define stream CongestedAreasStr (areaID string, peak_duration long);
 
---@sink(type='log', prefix= 'Pleasant Driver') 
+--@sink(type='log', prefix= 'Pleasant Driver')
+@sink(
+    type='kafka',
+    topic='pleasant_driver',
+    partition.no='0',
+    bootstrap.servers='localhost:9092',
+    @map(type='text', @payload('{{hack_license}}||{{tips_total}}') )) 
 define stream PleasantDriverStr (hack_license string, tips_total double);
 
 --Auxiliary Streams--
