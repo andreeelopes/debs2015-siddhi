@@ -51,6 +51,9 @@ payload = []
 for msg in c_profit_areas:
     payload.append(getPayload(msg.value))
     print("debug")
-    events = getSorted(payload,1, 10)
-    print(events)
+    events = getSorted(payload, 1, 10)
+    events_np = np.array(events)
+    profits = events_np[:,1]
+    coords = #o que por aqui?!?
+    print(coords)
     
