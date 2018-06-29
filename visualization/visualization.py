@@ -24,8 +24,9 @@ def getPayload(msg):
     payload = msg.decode('UTF-8') #converter bytes para str
     return payload.split('||')
     
-def getSorted(list_to_sort, column):
-    return sorted(list_to_sort, key=lambda k: k[column]) 
+def getSorted(list_to_sort, column, limit):
+    sorted_list = sorted(list_to_sort, key=lambda k: k[column], reverse = True) 
+    return sorted_list[:limit]
 
 #pre: grid values must be positive or zero
 def getLongitude(grid_x):
@@ -39,6 +40,7 @@ def getLatitude(grid_y):
 
 #criacao dos consumidores para as varias queries
 
+
 c_freq_routes = createConsumer('freq_routes')
 c_profit_areas = createConsumer('profit_areas')
 c_idle_taxis = createConsumer('idle_taxis')
@@ -46,7 +48,9 @@ c_cong_areas = createConsumer('cong_areas')
 c_pleas_driver = createConsumer('pleasant_driver')
 payload = []
 
-for msg in c_pleas_driver:
+for msg in c_profit_areas:
     payload.append(getPayload(msg.value))
     print("debug")
-    print(getSorted(payload,2))
+    events = getSorted(payload,1, 10)
+    print(events)
+    
