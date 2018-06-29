@@ -9,14 +9,33 @@ Created on Fri Jun 29 10:27:31 2018
 from kafka import KafkaConsumer
 import numpy as np
 
+
+START_GRID_LONGITUDE = -74.913585
+GRID_STEP_LONGITUDE = 0.0059986
+START_GRID_LATITUDE = 41.474937
+GRID_STEP_LATITUDE = 0.004491556
+
+
 def createConsumer(topic):
     return KafkaConsumer(topic)
 
 #ex: b'E0C54FD4238BC93F36CA25238F7E69C0-38,25'"
 def getPayload(msg):
     payload = msg.decode('UTF-8') #converter bytes para str
-    return np.asarray(payload.split('||'))
+    return payload.split('||')
     
+def getSorted(list_to_sort, column):
+    return sorted(list_to_sort, key=lambda k: k[column]) 
+
+#pre: grid values must be positive or zero
+def getLongitude(grid_x):
+    
+    return START_GRID_LONGITUDE + grid_x * GRID_STEP_LONGITUDE
+    
+#pre: grid values must be positive or zero
+def getLatitude(grid_y):
+    return START_GRID_LATITUDE - grid_y * GRID_STEP_LATITUDE
+
 
 #criacao dos consumidores para as varias queries
 
@@ -25,7 +44,9 @@ c_profit_areas = createConsumer('profit_areas')
 c_idle_taxis = createConsumer('idle_taxis')
 c_cong_areas = createConsumer('cong_areas')
 c_pleas_driver = createConsumer('pleasant_driver')
+payload = []
 
 for msg in c_pleas_driver:
-    payload = getPayload(msg.value)
-    print(payload[0])
+    payload.append(getPayload(msg.value))
+    print("debug")
+    print(getSorted(payload,2))
